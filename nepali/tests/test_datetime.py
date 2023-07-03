@@ -1,8 +1,8 @@
 import datetime
 import unittest
 
-from nepali.datetime import nepalidate, nepalitime, nepalidatetime
-from nepali.datetime.utils import to_nepalidatetime, to_nepalidate
+from nepali.datetime import nepalidate, nepalidatetime, nepalitime
+from nepali.datetime.utils import to_nepalidate, to_nepalidatetime
 from nepali.exceptions import InvalidNepaliDateTimeObjectException
 from nepali.timezone import NepaliTimeZone
 
@@ -250,9 +250,7 @@ class TestNepaliDateTime(unittest.TestCase):
         self.assertEqual(
             nepalidatetime_obj1,
             nepalidatetime_obj2,
-            msg="{} and {} are not equal".format(
-                nepalidatetime_obj1, nepalidatetime_obj2
-            ),
+            msg=f"{nepalidatetime_obj1} and {nepalidatetime_obj2} are not equal",
         )
 
 

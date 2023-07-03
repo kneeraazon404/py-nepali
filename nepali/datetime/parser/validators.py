@@ -2,11 +2,11 @@
 validates parsing
 """
 import re
+from typing import Optional, Tuple
 
 from nepali.char import nepali_to_english_text
+from nepali.constants import NEPALI_MONTHS_EN, WEEKS_ABBR_EN, WEEKS_EN
 from nepali.datetime import nepalidatetime, nepalimonth, nepaliweek
-from nepali.datetime.constants import MONTHS_EN, WEEKS_EN, WEEKS_ABBR_EN
-
 
 __nepali_time_re__CACHE = None
 
@@ -41,8 +41,8 @@ class NepaliTimeRE(dict):
                 "z": r"(?P<z>[+-]\d\d:?[0-5]\d(:?[0-5]\d(\.\d{1,6})?)?|(?-i:Z))",
                 "A": self.__seqToRE(WEEKS_EN, "A"),
                 "a": self.__seqToRE(WEEKS_ABBR_EN, "a"),
-                "B": self.__seqToRE(MONTHS_EN, "B"),
-                "b": self.__seqToRE(MONTHS_EN, "b"),
+                "B": self.__seqToRE(NEPALI_MONTHS_EN, "B"),
+                "b": self.__seqToRE(NEPALI_MONTHS_EN, "b"),
                 "p": self.__seqToRE(
                     (
                         "AM",
@@ -68,39 +68,42 @@ class NepaliTimeRE(dict):
         else:
             return ""
         regex = "|".join(re.escape(stuff) for stuff in to_convert)
-        regex = "(?P<%s>%s" % (directive, regex)
-        return "%s)" % regex
+        regex = f"(?P<{directive}>{regex}"
+        return f"{regex})"
 
-    def pattern(self, format):
+    def pattern(self, date_format):
         """
-        Handle conversion from format directives to regexes.
+        Handle conversion from format directives to regex.
         """
         processed_format = ""
         regex_chars = re.compile(r"([\\.^$*+?\(\){}\[\]|])")
-        format = regex_chars.sub(r"\\\1", format)
+        date_format = regex_chars.sub(r"\\\1", date_format)
         whitespace_replacement = re.compile(r"\s+")
-        format = whitespace_replacement.sub(r"\\s+", format)
-        while "%" in format:
-            directive_index = format.index("%") + 1
+        date_format = whitespace_replacement.sub(r"\\s+", date_format)
+        while "%" in date_format:
+            directive_index = date_format.index("%") + 1
             index_increment = 1
 
-            if format[directive_index] == "-":
+            if date_format[directive_index] == "-":
                 index_increment = 2
 
-            if format[directive_index : directive_index + index_increment] not in self:
+            if (
+                date_format[directive_index : directive_index + index_increment]
+                not in self
+            ):
                 return None
 
             processed_format = "%s%s%s" % (
                 processed_format,
-                format[: directive_index - 1],
-                self[format[directive_index : directive_index + index_increment]],
+                date_format[: directive_index - 1],
+                self[date_format[directive_index : directive_index + index_increment]],
             )
-            format = format[directive_index + index_increment :]
-        return "^%s%s$" % (processed_format, format)
+            date_format = date_format[directive_index + index_increment :]
+        return f"^{processed_format}{date_format}$"
 
-    def compile(self, format):
+    def compile(self, date_format):
         """Return a compiled re object for the format string."""
-        return re.compile(self.pattern(format), re.IGNORECASE)
+        return re.compile(self.pattern(date_format), re.IGNORECASE)
 
 
 def get_nepali_time_re_object():
@@ -131,11 +134,142 @@ def extract(datetime_str, format):
     # converting datetime_str to english if any exists
     datetime_str = nepali_to_english_text(datetime_str)
 
-    re_compiled_format = get_nepali_time_re_object().compile(format=format)
+    re_compiled_format = get_nepali_time_re_object().compile(format)
     match = re_compiled_format.match(datetime_str)
     if match is None:
         return {}
     return match.groupdict()
+
+
+def __convert_12_hour_to_24_hour(hour: int, am_pm: str) -> int:
+    """Converts hours from 12-hour format to 24-hour format.
+
+    :param hour: The hour value to convert.
+    :param am_pm: Either "am" or "pm"; signifies whether the hour is in am or pm.
+
+    :returns: The value of `hour` converted to 24-hour format.
+    """
+    am_pm = am_pm.lower()
+    if am_pm == "am" and hour == 12:
+        return 0
+    elif am_pm == "pm" and hour != 12:
+        return hour + 12
+    return hour
+
+
+def __calculate_year(data: dict) -> Optional[int]:
+    """Calculates the year value from given data.
+
+    :param data: The dictionary of the format:
+                    {
+                        "Y": 2078,
+                        "b": "Mangsir",
+                        "d": 12,
+                        ...
+                    }
+
+    :returns: The year value of given date data.
+    """
+    if "y" in data:
+        return int(data["y"]) + 2000
+    elif "Y" in data:
+        return int(data["Y"])
+    return None
+
+
+def __calculate_month(data: dict) -> nepalimonth:
+    """Calculates the month value from given data.
+
+    :param data: The dictionary of the format:
+                    {
+                        "Y": 2078,
+                        "b": "Mangsir",
+                        "d": 12,
+                        ...
+                    }
+
+    :returns: The month value of given date data.
+    """
+    if "m" in data:
+        return nepalimonth(int(data["m"]))
+    elif "b" in data:
+        return nepalimonth(data["b"])
+    elif "B" in data:
+        return nepalimonth(data["B"])
+    return nepalimonth(1)
+
+
+def __calculate_day(data: dict) -> int:
+    """Calculates the day value from given data.
+
+    :param data: The dictionary of the format:
+                    {
+                        "Y": 2078,
+                        "b": "Mangsir",
+                        "d": 12,
+                        ...
+                    }
+
+    :returns: The day value of given date data.
+    """
+    if "d" in data:
+        return int(data["d"])
+    return 1
+
+
+def __calculate_hour_minute_seconds(data: dict) -> Tuple[int, int, int, int]:
+    """Calculates hour, minutes, seconds and microseconds from given data.
+
+    :param data: The dictionary of the format:
+                    {
+                        "Y": 2078,
+                        "b": "Mangsir",
+                        "d": 12,
+                        "H": 12,
+                        "M": 12,
+                        "S": 12,
+                        "f": 12,
+                        ...
+                    }
+
+    :returns: A tuple of hour, minute, seconds and microseconds.
+    """
+    hour = minute = second = fraction = 0
+    if "H" in data:
+        hour = int(data["H"])
+    elif "I" in data:
+        am_pm = data.get("p", "").lower() or "am"
+        hour = __convert_12_hour_to_24_hour(hour=int(data["I"]), am_pm=am_pm)
+
+    if "M" in data:
+        minute = int(data["M"])
+
+    if "S" in data:
+        second = int(data["S"])
+
+    if "f" in data:
+        s = data["f"]
+        # Pad to always return microseconds.
+        s += "0" * (6 - len(s))
+        fraction = int(s)
+
+    return hour, minute, second, fraction
+
+
+def __calculate_weekday(data: dict) -> Optional[nepaliweek]:
+    """Calculates the weekday of the date given in data.
+
+    :param data: The data that describes the date.
+
+    :returns: The weekday value; 0 for Sunday, 1 for Monday, etc.
+    """
+    if "a" in data:
+        return nepaliweek(data["a"])
+    elif "A" in data:
+        return nepaliweek(data["A"])
+    elif "w" in data:
+        return nepaliweek((int(data["w"]) - 1) % 7)
+    return None
 
 
 def transform(data: dict):
@@ -160,62 +294,12 @@ def transform(data: dict):
     }
     """
 
-    year = None
-    month = day = 1
-    hour = minute = second = fraction = 0
-    weekday = None
+    year = __calculate_year(data)
+    month = __calculate_month(data)
+    day = __calculate_day(data)
+    hour, minute, second, fraction = __calculate_hour_minute_seconds(data)
+    weekday = __calculate_weekday(data)
 
-    for date_key in data.keys():
-        if date_key == "y":
-            year = int(data["y"])
-            year += 2000
-        elif date_key == "Y":
-            year = int(data["Y"])
-        elif date_key == "m":
-            month = int(data["m"])
-        elif date_key == "B":
-            month = nepalimonth(data["B"])
-        elif date_key == "b":
-            month = nepalimonth(data["b"])
-        elif date_key == "d":
-            day = int(data["d"])
-        elif date_key == "H":
-            hour = int(data["H"])
-        elif date_key == "I":
-            hour = int(data["I"])
-            ampm = data.get("p", "").lower()
-            # If there was no AM/PM indicator, we'll treat this like AM
-            if ampm in ("", "am"):
-                # We're in AM so the hour is correct unless we're
-                # looking at 12 midnight.
-                # 12 midnight == 12 AM == hour 0
-                if hour == 12:
-                    hour = 0
-            elif ampm == "pm":
-                # We're in PM so we need to add 12 to the hour unless
-                # we're looking at 12 noon.
-                # 12 noon == 12 PM == hour 12
-                if hour != 12:
-                    hour += 12
-        elif date_key == "M":
-            minute = int(data["M"])
-        elif date_key == "S":
-            second = int(data["S"])
-        elif date_key == "f":
-            s = data["f"]
-            # Pad to always return microseconds.
-            s += "0" * (6 - len(s))
-            fraction = int(s)
-        elif date_key == "A":
-            weekday = nepaliweek(data["A"])
-        elif date_key == "a":
-            weekday = nepaliweek(data["a"])
-        elif date_key == "w":
-            weekday = int(data["w"])
-            if weekday == 0:
-                weekday = 6
-            else:
-                weekday -= 1
     return {
         "year": year,
         "month": month,
@@ -239,7 +323,7 @@ def validate(datetime_str, format):
     """
 
     # 1. validate if format is correct.
-    if get_nepali_time_re_object().pattern(format=format) is None:
+    if get_nepali_time_re_object().pattern(format) is None:
         # regex pattern generation failed
         return None
 

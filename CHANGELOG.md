@@ -1,6 +1,25 @@
 # CHANGELOG
 
-## v1.0.0
+## v1.1.0
+
+- Depreciated templatetags and added support from `django-nepali` package.
+- Updated README.md for `django-nepali` package.
+- Added source and changelog on the package information
+- Excluded tests from the package
+
+## v1.0.1 (May 16, 2023)
+- Fixes on `nepalinumber` templatetags
+    - Bug fix on Django templatetags 'nepalinumber' (was returning in en-US locale)
+    - Added templatetag `nepali_comma`
+    - Added templatetag `english_comma`
+- Fixed on `nepalidatetime` templatetags
+    - Added `nepalidate_ne` templatetag
+    - Added `nepalinow_en` templatetag
+    - Added `nepalinow_ne` templatetag
+    - Changed output locale of `nepalidate` and `nepalinow` templatetag to en-US (Changed since v1.0.0)
+    - Handled exceptions on all templatetags
+
+## v1.0.0 - (May 2, 2023)
 - Class representation (`__repr__`) added on NepaliTimeZone
 - Refactored date converter (Performance optimized)
 - Added locations feature

@@ -1,9 +1,9 @@
 # nepali
 
 [![PyPI version](https://badge.fury.io/py/nepali.svg)](https://badge.fury.io/py/nepali)
-[![CI status](https://github.com/opensource-nepal/py-nepali/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/opensource-nepal/py-nepali/actions)
+[![CI status](https://github.com/opensource-nepal/py-nepali/actions/workflows/python-package.yml/badge.svg?branch=main)](https://github.com/opensource-nepal/py-nepali/actions)
 [![Downloads](https://img.shields.io/pypi/dm/nepali.svg?maxAge=180)](https://pypi.org/project/nepali/)
-[![codecov](https://codecov.io/gh/opensource-nepal/py-nepali/branch/master/graph/badge.svg?token=PTUHYWCJ4I)](https://codecov.io/gh/opensource-nepal/py-nepali)
+[![codecov](https://codecov.io/gh/opensource-nepal/py-nepali/branch/main/graph/badge.svg?token=PTUHYWCJ4I)](https://codecov.io/gh/opensource-nepal/py-nepali)
 
 `nepali` is a python package containing features that will be useful for Nepali projects.
 
@@ -49,10 +49,11 @@ phone_number.parse("+977-9845217789")
    - [timezone](#timezone)
    - [parse](#parse)
    - [strftime() and strptime() Format Codes](#strftime-and-strptime-format-codes)
-2. [Numbers](#numbers)
-    - [nepalinumber](#nepalinumber)
-3. [Phone Number](#phone-number)
-4. [Locations](#locations)
+1. [Numbers](#numbers)
+   - [nepalinumber](#nepalinumber)
+1. [Phone Number](#phone-number)
+1. [Locations](#locations)
+1. [For Django Template](#for-django-template)
 
 ## Date and Time
 
@@ -296,7 +297,7 @@ np_datetime = parse("Jestha 15, 2079")                # 2079-02-15 00:00:00
 | `%A`      | Weekday as locale’s full name.                            | Sunday, Monday, …, Saturday    |
 | `%d`      | Day of the month as a zero-padded decimal number.         | 01, 02, …, 31                  |
 | `%-d`     | Day of the month as a decimal number.                     | 1, 2, …, 31                    |
-| `%B`      | Month as locale’s full name.                              | Baishak, Jestha, …, Chaitra    |
+| `%B`      | Month as locale’s full name.                              | Baishakh, Jestha, …, Chaitra   |
 | `%m`      | Month as a zero-padded decimal number.                    | 01, 02, …, 12                  |
 | `%-m`     | Month as a decimal number.                                | 1, 2, …, 12                    |
 | `%y`      | Year without century as a zero-padded decimal number.     | 00, 01, …, 99                  |
@@ -432,44 +433,9 @@ get_municipality(name_nepali="विराटनगर")
 
 ---
 
-## For Django Template
+## For Django
 
-Add `'nepali'` to your `INSTALLED_APPS` setting.
-
-```python
-INSTALLED_APPS = [
-    ...
-    'nepali',
-    ...
-]
-```
-
-In your Template
-
-```python
-{% load nepalidatetime %}
-```
-
-```python
-{% nepalinow %}
-```
-
-```python
-{% nepalinow '%Y-%m-%d' %}
-```
-
-```python
-{{ datetimeobj|nepalidate:"%Y-%m-%d" }}
-{{ datetimeobj|nepalidate_en:"%Y-%m-%d" }}
-```
-
-```python
-{{ datetimeobj|nepalihumanize }}
-```
-
-```python
-{{ forloop.counter|nepalinumber }}
-```
+We have created a new Django package called [django-nepali](https://github.com/opensource-nepal/django-nepali) to support `nepali` package. For more information, please visit [django-nepali](https://github.com/opensource-nepal/django-nepali).
 
 ## Contribution
 

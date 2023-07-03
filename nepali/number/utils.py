@@ -1,6 +1,5 @@
 from typing import Any
 
-
 NP_NUMBERS = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"]
 NP_NUMBERS_SET = set(NP_NUMBERS)
 
@@ -39,7 +38,7 @@ def add_comma_english(number: Any) -> str:
     Adds comma in english style
     Eg. 123456789 => 123,456,789
     """
-    return "{:,}".format(int(number))
+    return f"{int(number):,}"
 
 
 def add_comma(number: Any, convert=False) -> str:
